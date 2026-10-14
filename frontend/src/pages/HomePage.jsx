@@ -52,7 +52,7 @@ function HomePage() {
       {/* Hero Section */}
         <section className="flex flex-col items-center justify-center text-center min-h-[80vh] px-6 bg-gray-100">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Welcome to <span className="text-blue-600">CodeHub</span>
+            Welcome to <span className="text-blue-600">Ascend</span>
           </h1>
 
           <p className="max-w-2xl text-gray-600 text-lg mb-8">
@@ -71,7 +71,7 @@ function HomePage() {
 
       <section className="py-16 px-6 bg-white border-t">
         <h2 className="text-3xl font-bold text-center text-black mb-10">
-          Why Choose <span className="text-blue-600">CodeHub</span>?
+          Why Choose <span className="text-blue-600">Ascend</span>?
         </h2>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
@@ -113,7 +113,7 @@ function HomePage() {
         </h2>
 
         <p className="text-gray-600 mb-8 max-w-xl mx-auto">
-          Start solving problems, improve your coding logic, and become a better developer with CodeHub.
+          Start solving problems, improve your coding logic, and become a better developer with Ascend.
         </p>
 
         <button
@@ -131,7 +131,7 @@ function HomePage() {
               
               {/* Left */}
               <div className="text-center md:text-left">
-                <h2 className="text-lg font-semibold text-black">CodeHub</h2>
+                <h2 className="text-lg font-semibold text-black">Ascend</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   Code. Learn. Innovate. © {new Date().getFullYear()}
                 </p>

@@ -43,7 +43,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* Left - Logo */}
         <NavLink to="/" className="text-2xl font-bold text-black">
-          CodeHub
+          Ascend
         </NavLink>
 
         {/* Center - Links */}

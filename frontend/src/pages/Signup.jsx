@@ -91,7 +91,7 @@ function Signup() {
       )}
 
       <div className="w-full max-w-md bg-white border border-gray-300 rounded p-6">
-        <h1 className="text-3xl font-bold text-center mb-2">CodeHub</h1>
+        <h1 className="text-3xl font-bold text-center mb-2">Ascend</h1>
         <p className="text-center text-gray-600 mb-6 text-sm">
           Create your account to start coding
         </p>

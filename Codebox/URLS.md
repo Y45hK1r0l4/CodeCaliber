@@ -88,7 +88,7 @@ curl -X POST "http://localhost:3000/submissions?wait=true" \
 curl -X POST "http://localhost:3000/submissions?wait=true" \
   -H "Content-Type: application/json" \
   -H "X-Auth-Token: dev-token" \
-  -d '{"source_code": "#include <iostream>\nint main() { std::cout << 42; return 0; }", "language_id": 54}'
+  -d '{"source_code": "#include <bits/stdc++.h>\nusing namespace std;\nint main() { cout << 42; return 0; }", "language_id": 54}'
 ```
 
 ---

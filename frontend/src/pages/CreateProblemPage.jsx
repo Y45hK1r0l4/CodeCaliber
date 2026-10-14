@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
 import { useNavigate } from "react-router";
 import { axiosClient } from "../utils/axiosClient";
+import { ensureCppHeader } from "../utils/codeUtils";
 import Toast from "../components/Toaster";
 import { Sparkles, Bot, Wand2, Loader2, CheckCircle2, FileText, Code2, Plus, Trash2 } from "lucide-react";
 
@@ -148,17 +149,19 @@ export default function CreateProblemPage() {
 
       const formattedStartCode = ["c++", "java", "javascript"].map((lang) => {
         const found = findLangItem(generated.startCode, lang);
+        const code = found?.initialCode || "";
         return {
           language: lang,
-          initialCode: found?.initialCode || "",
+          initialCode: lang === "c++" ? ensureCppHeader(code) : code,
         };
       });
 
       const formattedRefSolution = ["c++", "java", "javascript"].map((lang) => {
         const found = findLangItem(generated.referenceSolution, lang);
+        const code = found?.completeCode || "";
         return {
           language: lang,
-          completeCode: found?.completeCode || "",
+          completeCode: lang === "c++" ? ensureCppHeader(code) : code,
         };
       });
 
@@ -302,11 +305,17 @@ export default function CreateProblemPage() {
         })),
         startCode: ["c++", "java", "javascript"].map((lang, idx) => ({
           language: lang,
-          initialCode: data.startCode?.[idx]?.initialCode || "",
+          initialCode:
+            lang === "c++"
+              ? ensureCppHeader(data.startCode?.[idx]?.initialCode)
+              : data.startCode?.[idx]?.initialCode || "",
         })),
         referenceSolution: ["c++", "java", "javascript"].map((lang, idx) => ({
           language: lang,
-          completeCode: data.referenceSolution?.[idx]?.completeCode || "",
+          completeCode:
+            lang === "c++"
+              ? ensureCppHeader(data.referenceSolution?.[idx]?.completeCode)
+              : data.referenceSolution?.[idx]?.completeCode || "",
         })),
       };
 

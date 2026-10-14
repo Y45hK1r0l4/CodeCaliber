@@ -1,6 +1,6 @@
 import { Problem } from "../models/problem.model.js"
 import { Submission } from "../models/submission.model.js"
-import { getLanguageById, submitBatch, submitToken } from "../utils/problem.utility.js"
+import { getLanguageById, submitBatch, submitToken, ensureCppHeader } from "../utils/problem.utility.js"
 
 
 export const submitCode = async(req,res)=>{
@@ -22,11 +22,16 @@ export const submitCode = async(req,res)=>{
             return res.status(404).send("Problem not found.");
         }
 
+        const normalizedCode =
+            language?.toLowerCase() === "c++" || language?.toLowerCase() === "cpp"
+                ? ensureCppHeader(code)
+                : code;
+
         //submit code received from frontend in DB 
         const submittedResult = await Submission.create({
             userId,
             problemId,
-            code,
+            code: normalizedCode,
             language,
             testCasesPassed:0,
             status:'pending',
@@ -38,7 +43,7 @@ export const submitCode = async(req,res)=>{
 
         //creating a batch for submission
         const submissions = problem.hiddenTestCases.map((testcase)=>({
-            source_code:code,
+            source_code: normalizedCode,
             language_id : languageId,
             stdin: testcase.input,
             expected_output:testcase.output
@@ -59,43 +64,48 @@ export const submitCode = async(req,res)=>{
         let errorMessage = null
         let failedTestCase = null
 
-       for(const [index, test] of testResult.entries()){
-             if(test.status_id == 3){
-                 testCasesPassed++;
-                 runtime += Number.parseFloat(test.time) || 0
-                 memory = Math.max(memory, test.memory || 0)
-             }
-             else if(test.status_id == 4){
-                 status = 'wrong'
-                 errorMessage = 'Wrong Answer'
-             }
-             else if(test.status_id == 6){
-                 status = 'error'
-                 errorMessage = 'Compilation Error: ' + (test.stderr || test.compile_output || '')
-             }
-             else if(test.status_id >= 7 && test.status_id <= 12){
-                 status = 'error'
-                 errorMessage = 'Runtime Error: ' + (test.stderr || '')
-             }
-             else if(test.status_id == 5){
-                 status = 'error'
-                 errorMessage = 'Time Limit Exceeded'
-             }
-             else{
-                 status = 'error'
-                 errorMessage = 'Unknown Error'
-             }
+        for(const [index, test] of testResult.entries()){
+            let currentError = null;
+            if(test.status_id == 3){
+                testCasesPassed++;
+                runtime += Number.parseFloat(test.time) || 0
+                memory = Math.max(memory, test.memory || 0)
+            }
+            else if(test.status_id == 4){
+                status = 'wrong'
+                currentError = 'Wrong Answer'
+            }
+            else if(test.status_id == 6){
+                status = 'error'
+                currentError = 'Compilation Error: ' + (test.compile_output || test.stderr || '')
+            }
+            else if(test.status_id >= 7 && test.status_id <= 12){
+                status = 'error'
+                currentError = 'Runtime Error: ' + (test.stderr || test.status?.description || '')
+            }
+            else if(test.status_id == 5){
+                status = 'error'
+                currentError = 'Time Limit Exceeded'
+            }
+            else{
+                status = 'error'
+                currentError = 'Unknown Error'
+            }
 
-              if (test.status_id !== 3 && !failedTestCase) {
-                  failedTestCase = {
-                      index: index + 1,
-                      input: problem.hiddenTestCases[index].input,
-                      expectedOutput: problem.hiddenTestCases[index].output,
-                      actualOutput: test.stdout || null,
-                      error: errorMessage
-                  }
-              }
-         }
+            if (!errorMessage && currentError) {
+                errorMessage = currentError;
+            }
+
+            if (test.status_id !== 3 && !failedTestCase) {
+                failedTestCase = {
+                    index: index + 1,
+                    input: String(problem.hiddenTestCases[index].input ?? ""),
+                    expectedOutput: String(problem.hiddenTestCases[index].output ?? ""),
+                    actualOutput: test.stdout !== undefined && test.stdout !== null ? String(test.stdout) : "",
+                    error: currentError
+                }
+            }
+        }
 
         //2.store the result in Database in submission
         submittedResult.status = status
@@ -143,76 +153,120 @@ export const runCode = async(req,res)=>{
         }
 
 
+        const normalizedCode =
+            language?.toLowerCase() === "c++" || language?.toLowerCase() === "cpp"
+                ? ensureCppHeader(code)
+                : code;
+
         // Submit code to the local Codebox execution service.
-        const languageId = getLanguageById(language)
+        const languageId = getLanguageById(language);
 
-        //creating a batch for submission
-        const submissions = problem.visibleTestCases.map((testcase)=>({
-            source_code:code,
-            language_id : languageId,
+        //creating a batch for submission against visible test cases
+        const submissions = problem.visibleTestCases.map((testcase) => ({
+            source_code: normalizedCode,
+            language_id: languageId,
             stdin: testcase.input,
-            expected_output:testcase.output
-        }))
+            expected_output: testcase.output,
+        }));
 
-         // Submit the test cases as a batch to Codebox.
-        const submitResult = await submitBatch(submissions)
+        // Submit the test cases as a batch to Codebox.
+        const submitResult = await submitBatch(submissions);
+        const resultToken = submitResult.map((value) => value.token);
+        const testResult = await submitToken(resultToken);
 
-        const resultToken = submitResult.map((value) => value.token)
+        let testCasesPassed = 0;
+        let runtime = 0;
+        let memory = 0;
+        let compilationError = null;
 
-        const testResult = await submitToken(resultToken)
+        // Check for compilation errors
+        for (const test of testResult) {
+            if (test.status_id === 6 || test.compile_output) {
+                compilationError = test.compile_output || test.stderr || "Compilation failed";
+                break;
+            }
+        }
 
-        const submittedResult =({
+        const testCaseDetails = problem.visibleTestCases.map((tc, index) => {
+            const test = testResult[index] || {};
+            const isPassed = test.status_id === 3;
+            if (isPassed) {
+                testCasesPassed++;
+                runtime += Number.parseFloat(test.time) || 0;
+                memory = Math.max(memory, test.memory || 0);
+            }
+
+            let realError = null;
+            if (test.compile_output) {
+                realError = test.compile_output;
+            } else if (test.stderr) {
+                realError = test.stderr;
+            } else if (test.status_id === 5) {
+                realError = "Time Limit Exceeded";
+            } else if (test.status_id === 4) {
+                realError = "Wrong Answer";
+            } else if (test.status_id !== 3) {
+                realError = test.status?.description || "Runtime Error";
+            }
+
+            return {
+                index: index + 1,
+                input: String(tc.input ?? ""),
+                expectedOutput: String(tc.output ?? ""),
+                actualOutput: test.stdout !== undefined && test.stdout !== null ? String(test.stdout) : "",
+                passed: isPassed,
+                status: test.status?.description || (isPassed ? "Accepted" : "Failed"),
+                statusId: test.status_id,
+                time: test.time || 0,
+                memory: test.memory || 0,
+                error: realError,
+                stderr: test.stderr || null,
+                compileOutput: test.compile_output || null,
+            };
+        });
+
+        let overallStatus = "accepted";
+        let errorMessage = null;
+
+        if (compilationError) {
+            overallStatus = "error";
+            errorMessage = `Compilation Error: ${compilationError}`;
+        } else if (testCasesPassed === problem.visibleTestCases.length) {
+            overallStatus = "accepted";
+            errorMessage = null;
+        } else {
+            const firstFailed = testCaseDetails.find((t) => !t.passed);
+            if (firstFailed && firstFailed.statusId >= 7 && firstFailed.statusId <= 12) {
+                overallStatus = "error";
+                errorMessage = `Runtime Error: ${firstFailed.stderr || firstFailed.error}`;
+            } else if (firstFailed && firstFailed.statusId === 5) {
+                overallStatus = "error";
+                errorMessage = "Time Limit Exceeded";
+            } else {
+                overallStatus = "wrong";
+                errorMessage = "Wrong Answer";
+            }
+        }
+
+        const failedTestCase = testCaseDetails.find((t) => !t.passed) || null;
+
+        const submittedResult = {
             userId,
             problemId,
-            code,
+            code: normalizedCode,
             language,
-            testCasesPassed:0,
-            status:'pending',
-            testCasesTotal:problem.hiddenTestCases.length
-        })
+            testCasesPassed,
+            testCasesTotal: problem.visibleTestCases.length,
+            status: overallStatus,
+            errorMessage,
+            compilationError,
+            runtime,
+            memory,
+            testCaseDetails,
+            failedTestCase,
+        };
 
-        // 1 . check for error
-        let testCasesPassed = 0
-        let runtime = 0, memory = 0
-        let status = 'accepted'
-        let errorMessage = null
-
-       for(const test of testResult){
-             if(test.status_id == 3){
-                 testCasesPassed++;
-                 runtime = runtime + parseFloat(test.time)
-                 memory = Math.max(memory , test.memory)
-             }
-             else if(test.status_id == 4){
-                 status = 'wrong'
-                 errorMessage = 'Wrong Answer'
-             }
-             else if(test.status_id == 6){
-                 status = 'error'
-                 errorMessage = 'Compilation Error: ' + (test.stderr || test.compile_output || '')
-             }
-             else if(test.status_id >= 7 && test.status_id <= 12){
-                 status = 'error'
-                 errorMessage = 'Runtime Error: ' + (test.stderr || '')
-             }
-             else if(test.status_id == 5){
-                 status = 'error'
-                 errorMessage = 'Time Limit Exceeded'
-             }
-             else{
-                 status = 'error'
-                 errorMessage = 'Unknown Error'
-             }
-         }
-
-        //2.store the result in Database in submission
-        submittedResult.status = status
-        submittedResult.testCasesPassed = testCasesPassed
-        submittedResult.errorMessage = errorMessage
-        submittedResult.runtime = runtime
-        submittedResult.memory = memory
-
-        return res.status(201).send(submittedResult)
+        return res.status(200).json(submittedResult);
 
 
     } catch (error) {

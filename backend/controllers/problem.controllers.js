@@ -2,7 +2,7 @@
 
 import { Submission } from "../models/submission.model.js"
 import { User } from "../models/user.model.js"
-import { getLanguageById, submitBatch, submitToken } from "../utils/problem.utility.js"
+import { getLanguageById, submitBatch, submitToken, ensureCppHeader } from "../utils/problem.utility.js"
 import { Problem } from "../models/problem.model.js"
 import {
     generateProblemWithGemini,
@@ -25,9 +25,32 @@ export const createProblem = async(req,res)=>{
         });
         }
 
+        // Ensure C++ starter boilerplate and reference solutions include required headers
+        let processedStartCode = startCode;
+        if (Array.isArray(startCode)) {
+            processedStartCode = startCode.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, initialCode: ensureCppHeader(item.initialCode) };
+                }
+                return item;
+            });
+        }
+
+        let processedRefSolution = referenceSolution;
+        if (Array.isArray(referenceSolution)) {
+            processedRefSolution = referenceSolution.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, completeCode: ensureCppHeader(item.completeCode) };
+                }
+                return item;
+            });
+        }
+
         //! if the below for loop executes fully means admin ne jo data bheja hia wo ekdum picture perfect hai aur usko ham DB mein store kar skte hai 
         
-        for(const {language , completeCode} of referenceSolution){
+        for(const {language , completeCode} of processedRefSolution){
 
             //source_code
             // language_id
@@ -73,6 +96,8 @@ export const createProblem = async(req,res)=>{
         //now we will store it in db
         const userProblem = await Problem.create({
             ...req.body,
+            startCode: processedStartCode,
+            referenceSolution: processedRefSolution,
             problemCreator : req.result._id
         })
 
@@ -112,7 +137,28 @@ export const getProblemById = async(req,res)=>{
         if(!getProblem){
             return res.status(404).send("Problem is missing")
         }
-        return res.status(200).send(getProblem)
+
+        const problemObj = getProblem.toObject();
+        if (Array.isArray(problemObj.startCode)) {
+            problemObj.startCode = problemObj.startCode.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, initialCode: ensureCppHeader(item.initialCode) };
+                }
+                return item;
+            });
+        }
+        if (Array.isArray(problemObj.referenceSolution)) {
+            problemObj.referenceSolution = problemObj.referenceSolution.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, completeCode: ensureCppHeader(item.completeCode) };
+                }
+                return item;
+            });
+        }
+
+        return res.status(200).send(problemObj)
 
     } catch (error) {
         res.status(500).json({message:error.message})
@@ -134,7 +180,28 @@ export const getProblemByIdForAdmin = async (req, res) => {
         if (!problem) {
             return res.status(404).json({ success: false, message: "Problem not found" });
         }
-        return res.status(200).json({ success: true, data: problem });
+
+        const problemObj = problem.toObject();
+        if (Array.isArray(problemObj.startCode)) {
+            problemObj.startCode = problemObj.startCode.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, initialCode: ensureCppHeader(item.initialCode) };
+                }
+                return item;
+            });
+        }
+        if (Array.isArray(problemObj.referenceSolution)) {
+            problemObj.referenceSolution = problemObj.referenceSolution.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, completeCode: ensureCppHeader(item.completeCode) };
+                }
+                return item;
+            });
+        }
+
+        return res.status(200).json({ success: true, data: problemObj });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -180,9 +247,32 @@ export const updateProblem = async (req, res) => {
             }
         }
 
+        // Ensure C++ starter boilerplate and reference solutions include required headers
+        let processedStartCode = startCode;
+        if (Array.isArray(startCode)) {
+            processedStartCode = startCode.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, initialCode: ensureCppHeader(item.initialCode) };
+                }
+                return item;
+            });
+        }
+
+        let processedRefSolution = referenceSolution;
+        if (Array.isArray(referenceSolution)) {
+            processedRefSolution = referenceSolution.map((item) => {
+                const lang = item.language?.toLowerCase();
+                if (lang === "c++" || lang === "cpp") {
+                    return { ...item, completeCode: ensureCppHeader(item.completeCode) };
+                }
+                return item;
+            });
+        }
+
         // Validate reference solutions against visible test cases if updated
-        if (referenceSolution && Array.isArray(referenceSolution) && visibleTestCases && Array.isArray(visibleTestCases)) {
-            for (const { language, completeCode } of referenceSolution) {
+        if (processedRefSolution && Array.isArray(processedRefSolution) && visibleTestCases && Array.isArray(visibleTestCases)) {
+            for (const { language, completeCode } of processedRefSolution) {
                 const languageId = getLanguageById(language);
                 if (!languageId) continue;
 
@@ -221,8 +311,8 @@ export const updateProblem = async (req, res) => {
         if (tags) problem.tags = tags;
         if (visibleTestCases) problem.visibleTestCases = visibleTestCases;
         if (hiddenTestCases) problem.hiddenTestCases = hiddenTestCases;
-        if (startCode) problem.startCode = startCode;
-        if (referenceSolution) problem.referenceSolution = referenceSolution;
+        if (startCode) problem.startCode = processedStartCode;
+        if (referenceSolution) problem.referenceSolution = processedRefSolution;
 
         await problem.save();
 

@@ -253,7 +253,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"source_code\": \"#include <iostream>\\nusing namespace std;\\n\\nint main() {\\n    cout << \\\"Hello, World!\\\" << endl;\\n    return 0;\\n}\",\n  \"language_id\": 54\n}"
+              "raw": "{\n  \"source_code\": \"#include <bits/stdc++.h>\\nusing namespace std;\\n\\nint main() {\\n    cout << \\\"Hello, World!\\\" << endl;\\n    return 0;\\n}\",\n  \"language_id\": 54\n}"
             },
             "description": "Simple C++ hello world"
           }

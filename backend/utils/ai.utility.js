@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { submitBatch, submitToken, getLanguageById } from "./problem.utility.js";
+import { submitBatch, submitToken, getLanguageById, ensureCppHeader } from "./problem.utility.js";
 
 
 const CANDIDATE_MODELS = [
@@ -211,10 +211,10 @@ CONSTRAINTS & RULES:
    - Test case "input" is provided via stdin.
    - Test case "output" is captured from stdout.
    - Reference solutions: Concise, complete, runnable code reading stdin and printing stdout.
-     - C++: runnable code with #include <iostream>, etc., and int main().
+     - C++: runnable code MUST start with "#include <bits/stdc++.h>\nusing namespace std;" and contain int main().
      - Java: runnable code with "public class Main { public static void main(String[] args) { ... } }".
      - JavaScript: runnable code with "const fs = require('fs'); const input = fs.readFileSync(0, 'utf8').trim(); ... console.log(...)".
-8. startCode: Concise starter boilerplate for C++, Java, and JavaScript with input reading logic and "// Write your logic here".`;
+8. startCode: Concise starter boilerplate for C++, Java, and JavaScript with input reading logic and "// Write your logic here" (C++ starter MUST start with "#include <bits/stdc++.h>\nusing namespace std;").`;
 
   const text = await generateWithFallback(systemPrompt, {
     generationConfig: {
@@ -263,17 +263,27 @@ CONSTRAINTS & RULES:
   };
 
   if (Array.isArray(parsed.startCode)) {
-    parsed.startCode = parsed.startCode.map((item, idx) => ({
-      ...item,
-      language: normalizeLang(item.language) || (idx === 0 ? "c++" : idx === 1 ? "java" : "javascript"),
-    }));
+    parsed.startCode = parsed.startCode.map((item, idx) => {
+      const language = normalizeLang(item.language) || (idx === 0 ? "c++" : idx === 1 ? "java" : "javascript");
+      const initialCode = language === "c++" ? ensureCppHeader(item.initialCode) : item.initialCode;
+      return {
+        ...item,
+        language,
+        initialCode,
+      };
+    });
   }
 
   if (Array.isArray(parsed.referenceSolution)) {
-    parsed.referenceSolution = parsed.referenceSolution.map((item, idx) => ({
-      ...item,
-      language: normalizeLang(item.language) || (idx === 0 ? "c++" : idx === 1 ? "java" : "javascript"),
-    }));
+    parsed.referenceSolution = parsed.referenceSolution.map((item, idx) => {
+      const language = normalizeLang(item.language) || (idx === 0 ? "c++" : idx === 1 ? "java" : "javascript");
+      const completeCode = language === "c++" ? ensureCppHeader(item.completeCode) : item.completeCode;
+      return {
+        ...item,
+        language,
+        completeCode,
+      };
+    });
   }
 
   // Calibrate testcase outputs with ground-truth Codebox execution

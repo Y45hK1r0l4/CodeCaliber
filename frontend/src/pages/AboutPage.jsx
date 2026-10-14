@@ -41,13 +41,13 @@ function AboutPage() {
         
         {/* Header */}
         <h1 className="text-4xl font-bold mb-4 text-black">
-          About CodeHub
+          About Ascend
         </h1>
 
         <p className="text-gray-600 text-base max-w-2xl mx-auto mb-10">
-          CodeHub is a full-stack online coding platform that empowers users to
+          Ascend is a full-stack online coding platform that empowers users to
           write, compile, and execute code in real-time — directly in their
-          browser. Designed with performance and scalability in mind, CodeHub
+          browser. Designed with performance and scalability in mind, Ascend
           ensures a smooth and powerful problem-solving experience for
           developers worldwide.
         </p>

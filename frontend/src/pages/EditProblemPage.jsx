@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
 import { useNavigate, useParams, NavLink } from "react-router";
 import { axiosClient } from "../utils/axiosClient";
+import { ensureCppHeader } from "../utils/codeUtils";
 import Toast from "../components/Toaster";
 import {
   Sparkles,
@@ -188,17 +189,19 @@ export default function EditProblemPage() {
 
         const formattedStartCode = ["c++", "java", "javascript"].map((lang) => {
           const found = findLangItem(prob.startCode, lang);
+          const code = found?.initialCode || "";
           return {
             language: lang,
-            initialCode: found?.initialCode || "",
+            initialCode: lang === "c++" ? ensureCppHeader(code) : code,
           };
         });
 
         const formattedRefSolution = ["c++", "java", "javascript"].map((lang) => {
           const found = findLangItem(prob.referenceSolution, lang);
+          const code = found?.completeCode || "";
           return {
             language: lang,
-            completeCode: found?.completeCode || "",
+            completeCode: lang === "c++" ? ensureCppHeader(code) : code,
           };
         });
 
@@ -375,11 +378,17 @@ export default function EditProblemPage() {
         })),
         startCode: ["c++", "java", "javascript"].map((lang, idx) => ({
           language: lang,
-          initialCode: data.startCode?.[idx]?.initialCode || "",
+          initialCode:
+            lang === "c++"
+              ? ensureCppHeader(data.startCode?.[idx]?.initialCode)
+              : data.startCode?.[idx]?.initialCode || "",
         })),
         referenceSolution: ["c++", "java", "javascript"].map((lang, idx) => ({
           language: lang,
-          completeCode: data.referenceSolution?.[idx]?.completeCode || "",
+          completeCode:
+            lang === "c++"
+              ? ensureCppHeader(data.referenceSolution?.[idx]?.completeCode)
+              : data.referenceSolution?.[idx]?.completeCode || "",
         })),
       };
 
