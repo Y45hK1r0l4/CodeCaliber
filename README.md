@@ -17,12 +17,36 @@ CodeCaliber is a specialized coding examination and assessment management suite 
 
 ### Core Capabilities
 
+* **Automatic AI Problem Generation**: Generates comprehensive coding problems on demand using Google Gemini based on specific topics, difficulty levels (Easy, Medium, Hard), tags, and test case counts. Automatically produces formatted problem statements, structured visible and hidden test cases, multi-language starter code templates, and reference solutions.
+* **Automated Sandbox Pre-Validation Quality Gate**: Guarantees zero broken questions. Before any problem (whether AI-generated or manually authored) can be saved to the database, the backend compiles and executes the reference solution through the Codebox sandbox against every test case. If the reference solution fails, crashes, or produces incorrect output, the creation is rejected with an actionable validation error.
 * **Academic Integrity and Live Proctoring**: Monitors fullscreen exits, browser window blur, and tab switching in real time. Automatically logs audit events and computes candidate risk tiers (`clean`, `suspicious`, `flagged`).
 * **Sandboxed Multi-Language Execution**: Executes user code in isolated Docker containers via the Codebox worker queue, supporting C++, Python, Java, and JavaScript with strict execution timeouts and memory quotas.
 * **Socratic AI Hints**: Integrates Google Gemini to deliver stepped intuition hints. The engine analyzes student code and problem context without revealing direct code solutions or leaking test answers.
 * **Multi-Tenant Organization Isolation**: Strict database-level isolation ensuring that administrators, educators, question repositories, and student records remain segregated per institution.
 * **Server-Enforced Timers and Auto-Finalization**: Test attempts run against server-validated deadlines. If a student closes their browser or runs out of time, their attempt is automatically graded and finalized.
 * **Granular Instructor Analytics**: Educator dashboards with real-time score distributions, pass rates, question difficulty analytics, and individual student audit logs.
+
+---
+
+## Automated AI Problem Generation & Sandbox Pre-Validation
+
+CodeCaliber solves one of the biggest challenges in coding assessment authoring: **hallucinated test cases and broken problem statements**. 
+
+```mermaid
+flowchart TD
+    Prompt["1. Educator Inputs Parameters<br/>Topic, Difficulty (Easy/Medium/Hard), Test Case Counts"] --> Gemini["2. Google Gemini Generates Complete Problem<br/>Statement, Starter Code, Hidden Cases, Reference Solution"]
+    Gemini --> Batch["3. Package Batch Submissions<br/>Map reference code against test cases"]
+    Batch --> Codebox["4. Codebox Sandboxed Execution<br/>Compile and execute reference solution"]
+    Codebox --> ValidationCheck{"Did all test cases return status_id: 3 (Accepted)?"}
+    
+    ValidationCheck -- "No (Wrong Answer / Compile Error / Timeout)" --> Reject["REJECT: Return 400 Validation Error<br/>Detailed stderr/compiler output returned to educator"]
+    ValidationCheck -- "Yes (100% Passed)" --> Save["APPROVED: Save to Question Bank<br/>Problem guaranteed ready for timed examinations"]
+```
+
+### Pre-Validation Guarantee:
+1. **Multi-Language Verification**: Both manual and AI-generated reference solutions are compiled and executed inside the Codebox sandbox.
+2. **Automated Header Normalization**: C++ reference solutions are checked and automatically injected with `#include <iostream>`, `#include <vector>`, and required standard libraries if omitted.
+3. **Deterministic Output Matching**: Every expected output string is trimmed and verified against the actual stdout of the reference solution before any student ever touches the question.
 
 ---
 
