@@ -1,6 +1,6 @@
 # CodeCaliber
 
-Multi-tenant academic coding examination and assessment platform with sandboxed execution, real-time proctoring, and AI-assisted intuition hints.
+Multi-tenant coding examination and assessment platform with sandboxed execution, real-time proctoring, and AI-assisted intuition hints.
 
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%7C%20TailwindCSS%20%7C%20Vite-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js%20%7C%20Express-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -9,11 +9,9 @@ Multi-tenant academic coding examination and assessment platform with sandboxed 
 [![Docker](https://img.shields.io/badge/Sandboxing-Docker%20Codebox-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
-
 ## Overview
 
-CodeCaliber is a specialized coding examination and assessment management suite designed for universities, schools, technical academies, and hiring organizations. Unlike public competitive-programming websites, CodeCaliber focuses on institutional assessment integrity: multi-tenant administration, question bank management, timed tests with server-enforced countdowns, automated test case grading with partial credit, and live anti-cheat monitoring.
+CodeCaliber is a specialized coding examination and assessment management suite designed for universities, schools, technical academies, and hiring organizations. CodeCaliber focuses on institutional assessment integrity: multi-tenant administration, question list management, timed tests with server-enforced countdowns, automated test case grading with partial credit, and live anti-cheat monitoring.
 
 ### Core Capabilities
 
@@ -25,8 +23,6 @@ CodeCaliber is a specialized coding examination and assessment management suite 
 * **Multi-Tenant Organization Isolation**: Strict database-level isolation ensuring that administrators, educators, question repositories, and student records remain segregated per institution.
 * **Server-Enforced Timers and Auto-Finalization**: Test attempts run against server-validated deadlines. If a student closes their browser or runs out of time, their attempt is automatically graded and finalized.
 * **Granular Instructor Analytics**: Educator dashboards with real-time score distributions, pass rates, question difficulty analytics, and individual student audit logs.
-
----
 
 ## Automated AI Problem Generation & Sandbox Pre-Validation
 
@@ -40,15 +36,13 @@ flowchart TD
     Codebox --> ValidationCheck{"Did all test cases return status_id: 3 (Accepted)?"}
     
     ValidationCheck -- "No (Wrong Answer / Compile Error / Timeout)" --> Reject["REJECT: Return 400 Validation Error<br/>Detailed stderr/compiler output returned to educator"]
-    ValidationCheck -- "Yes (100% Passed)" --> Save["APPROVED: Save to Question Bank<br/>Problem guaranteed ready for timed examinations"]
+    ValidationCheck -- "Yes (100% Passed)" --> Save["APPROVED: Save to Question List<br/>Problem guaranteed ready for timed examinations"]
 ```
 
 ### Pre-Validation Guarantee:
 1. **Multi-Language Verification**: Both manual and AI-generated reference solutions are compiled and executed inside the Codebox sandbox.
 2. **Automated Header Normalization**: C++ reference solutions are checked and automatically injected with `#include <iostream>`, `#include <vector>`, and required standard libraries if omitted.
 3. **Deterministic Output Matching**: Every expected output string is trimmed and verified against the actual stdout of the reference solution before any student ever touches the question.
-
----
 
 ## System Architecture
 
@@ -60,8 +54,6 @@ graph TD
     API -->|Batch Code Execution Queue| Sandbox["Codebox Sandboxed Engine<br/>(Docker / Worker Pool)"]
     API -->|Contextual Prompting| LLM["Google Gemini API<br/>(Socratic Hints)"]
 ```
-
----
 
 ## Role and Permission Matrix
 
@@ -79,8 +71,6 @@ graph TD
 | View integrity violation audit logs | No | Yes | Yes |
 | Manage educator accounts | No | No | Yes |
 | Track registered platform users | No | No | Yes |
-
----
 
 ## Repository Structure
 
@@ -108,8 +98,6 @@ CodeCaliber/
 |-- render.yaml       # Backend cloud deployment specification
 `-- README.md         # Primary documentation
 ```
-
----
 
 ## API Reference
 
@@ -169,8 +157,6 @@ All requests accept and return JSON. Authenticated endpoints require an HTTP-onl
 | `GET` | `/tests/history` | Staff | Retrieve concluded assessment history with aggregate class statistics. |
 | `GET` | `/tests/:testId/performance` | Staff | Retrieve detailed evaluation dashboard, student scores, and audit logs. |
 
----
-
 ## Local Setup and Installation
 
 ### 1. Prerequisites
@@ -220,35 +206,12 @@ npm run dev
 
 The application will be accessible at `http://localhost:5173`.
 
-### 5. Codebox Sandbox Setup (Optional for local execution)
+### 5. Codebox Sandbox Setup
 ```bash
 cd ../Codebox
 npm install
 docker compose up -d
-npm start
 ```
-
----
-
-## Development Scripts
-
-From the repository root:
-
-```bash
-# Run backend development server
-npm run dev:backend
-
-# Run frontend development server
-npm run dev:frontend
-
-# Build frontend client for production
-npm run build
-
-# Run linter
-npm run lint
-```
-
----
 
 ## License
 
