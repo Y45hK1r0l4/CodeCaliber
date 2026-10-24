@@ -1,0 +1,25 @@
+{
+  "name": "codenest",
+  "version": "1.0.0",
+  "description": "Enterprise-grade academic coding examination & assessment platform with sandboxed execution and live proctoring.",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build",
+    "lint": "npm --prefix frontend run lint"
+  },
+  "keywords": [
+    "coding-assessment",
+    "proctoring",
+    "judge0",
+    "codebox",
+    "education",
+    "react",
+    "nodejs",
+    "mongodb"
+  ],
+  "author": "Y45hK1r0l4",
+  "license": "MIT"
+}

@@ -13,7 +13,7 @@ int main() {
 }`;
 
   if (!code || typeof code !== "string" || !code.trim()) {
-    return "";
+    return defaultCppBoilerplate;
   }
 
   let updated = code.trim();

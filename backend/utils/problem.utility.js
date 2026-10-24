@@ -22,11 +22,15 @@ codeboxClient.interceptors.request.use((config) => {
 export const getLanguageById = (lang) =>{
     const language = {
         "c++": 54,
+        "cpp": 54,
         "java": 62,
-        javascript: 63
+        "javascript": 63,
+        "js": 63,
+        "python": 71,
+        "py": 71
     }
 
-    return language[lang.toLowerCase()]
+    return language[lang?.toLowerCase()]
 }
 
 const chunks = (items, size) => {

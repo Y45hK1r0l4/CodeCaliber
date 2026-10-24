@@ -73,10 +73,18 @@ const problemSchema = new Schema({
             }
         }
     ],
+    organization: {
+        type: Schema.Types.ObjectId,
+        ref: 'Organization',
+        index: true
+    },
     problemCreator:{
         type:Schema.Types.ObjectId,
-        ref:'User',
-        required:true
+        ref:'User'
+    },
+    createdBy:{
+        type:Schema.Types.ObjectId,
+        ref:'User'
     }
 },{timestamps:true})
 

@@ -16,23 +16,28 @@ export const adminMiddleware = async(req,res,next)=>{
 
         const result = await User.findById(_id)
 
-        //check if person who is registering new admin is a admin or not
-        if(payload.role != 'admin'){
-            throw new Error("Only admin can perfrom this task")
+        //check if person who is performing task is admin or evaluator
+        const staffRoles = ['admin', 'evaluator']
+        if(!staffRoles.includes(payload.role) && !staffRoles.includes(result?.role)){
+            throw new Error("Staff access is required for this task")
         }
 
         if(!result){
             throw new Error("User doesn't exists")
         }
 
-        //if token is present in redis blocklist
-        const isBlocked =  await redisClient.exists(`token:${token}`)
-        if(isBlocked){
-            throw new Error("Invalid token")
+        // If redis is connected, check if token is present in blocklist
+        if (redisClient.isOpen) {
+          const isBlocked = await redisClient.exists(`token:${token}`);
+          if (isBlocked) {
+            throw new Error("Invalid or revoked token");
+          }
         }
         req.result = result
         next()
     } catch (error) {
-        res.status(500).send("Error : "+error)
+        const isAuthError = error.message.includes("Token") || error.message.includes("token");
+        const status = isAuthError ? 401 : 403;
+        return res.status(status).json({ message: error.message || "Unauthorized access" });
     }
 }

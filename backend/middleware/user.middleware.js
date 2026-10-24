@@ -22,14 +22,16 @@ export const userMiddleware = async(req,res,next)=>{
             throw new Error("User doesn't exists")
         }
 
-        //if token is present in redis blocklist
-        const isBlocked =  await redisClient.exists(`token:${token}`)
-        if(isBlocked){
-            throw new Error("Invalid token")
+        // If redis is connected, check if token is present in blocklist
+        if (redisClient.isOpen) {
+          const isBlocked = await redisClient.exists(`token:${token}`);
+          if (isBlocked) {
+            throw new Error("Invalid or revoked token");
+          }
         }
         req.result = result
         next()
     } catch (error) {
-        res.status(500).send("Error : "+error)
+        return res.status(401).json({ message: error.message || "Authentication failed" });
     }
 }

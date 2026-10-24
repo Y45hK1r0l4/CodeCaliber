@@ -8,8 +8,11 @@ function AdminRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <span className="loading loading-spinner loading-lg text-indigo-600"></span>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-zinc-500 font-mono text-xs gap-3">
+        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300 font-bold">
+          &lt;/&gt;
+        </div>
+        <p>Verifying access privileges...</p>
       </div>
     );
   }
@@ -19,7 +22,7 @@ function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== "admin") {
+  if (!["admin", "evaluator"].includes(user?.role)) {
     // If logged in but not admin, redirect to homepage
     return <Navigate to="/" replace />;
   }

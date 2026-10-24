@@ -6,7 +6,6 @@ import {
     getAllProblem,
     getProblemById,
     getProblemByIdForAdmin,
-    solvedAllProblemByUser,
     submittedProblem,
     generateAiProblem,
     getAiHint,
@@ -28,11 +27,10 @@ problemRouter.post("/ai-generate",adminMiddleware,generateAiProblem)
 
 //user can access
 problemRouter.get("/ProblemById/:id",userMiddleware,getProblemById)  // to fetch individual problem
-problemRouter.get("/getAllProblem",userMiddleware,getAllProblem)   // to fetch all problems
-problemRouter.get("/problemSolvedByUser",userMiddleware,solvedAllProblemByUser)  // to get total no of solved problem by user
+problemRouter.get("/admin/problems",adminMiddleware,getAllProblem)   // Tenant questions only (Staff)
 problemRouter.get("/submittedProblem/:pid",userMiddleware,submittedProblem)
 
-// Student AI Copilot
+// Participant AI Copilot
 problemRouter.post("/ai-hint",userMiddleware,getAiHint)
 problemRouter.post("/ai-explain",userMiddleware,getAiExplanation)
 problemRouter.post("/ai-complexity",userMiddleware,getAiComplexity)

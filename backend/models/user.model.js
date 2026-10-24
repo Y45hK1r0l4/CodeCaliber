@@ -27,16 +27,17 @@ const userSchema = new mongoose.Schema({
     },
     role:{
         type:String,
-        enum:['user','admin'],
-        default:'user'
+        enum:['admin','evaluator','participant'],
+        default:'participant'
     },
-    problemSolved:{
-        type:[{
-            type:Schema.Types.ObjectId,
-            ref:'Problem'
-        }],
-        unique:true
+    organization:{
+        type:Schema.Types.ObjectId,
+        ref:'Organization'
     },
+    problemSolved:[{
+        type:Schema.Types.ObjectId,
+        ref:'Problem'
+    }],
     password:{
         type:String,
         required:true

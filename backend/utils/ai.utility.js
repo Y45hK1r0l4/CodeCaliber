@@ -352,7 +352,7 @@ const calibrateTestCasesWithCodebox = async (parsed) => {
 
 
 /**
- * Generate a Socratic hint for a student working on a problem.
+ * Generate a Socratic hint for a participant working on a problem.
  * Never gives away direct code; asks guiding questions and points out algorithmic intuition.
  */
 export const generateSocraticHint = async ({
@@ -363,21 +363,21 @@ export const generateSocraticHint = async ({
   failedTestCase,
   hintNumber = 1,
 }) => {
-  const prompt = `You are a patient, encouraging Computer Science Teaching Assistant (TA) in a college lab.
-A student is working on the problem: "${problemTitle}".
-Student's Language: ${language || "C++"}
+  const prompt = `You are a patient, expert algorithmic technical mentor.
+A participant is working on the problem: "${problemTitle}".
+Participant's Language: ${language || "C++"}
 
 Problem Description excerpt:
 ${problemDescription ? problemDescription.substring(0, 800) : "N/A"}
 
-Student's Current Code:
+Participant's Current Code:
 \`\`\`${language}
 ${code || "// No code written yet"}
 \`\`\`
 
 ${
   failedTestCase
-    ? `The student's code failed on this test case:
+    ? `The participant's code failed on this test case:
 Input: ${failedTestCase.input || "N/A"}
 Expected Output: ${failedTestCase.expectedOutput || "N/A"}
 Actual Output: ${failedTestCase.actualOutput || "N/A"}
@@ -398,7 +398,7 @@ RULES:
 };
 
 /**
- * Explains an execution error (Wrong Answer, Runtime Error, TLE, etc.) to a student.
+ * Explains an execution error (Wrong Answer, Runtime Error, TLE, etc.) to a participant.
  */
 export const explainCodeError = async ({
   problemTitle,
@@ -408,11 +408,11 @@ export const explainCodeError = async ({
   errorMessage,
   failedTestCase,
 }) => {
-  const prompt = `You are an expert programming tutor debugging student code in a college lab.
+  const prompt = `You are an expert technical interviewer debugging code in an engineering assessment.
 Problem: "${problemTitle}"
 Language: ${language}
 
-Student's Code:
+Participant's Code:
 \`\`\`${language}
 ${code}
 \`\`\`
@@ -430,11 +430,11 @@ Actual Output: ${failedTestCase.actualOutput}`
 }
 
 TASK:
-Explain to the student:
+Explain to the participant:
 1. What went wrong (e.g. infinite loop, off-by-one index error, unhandled edge case, integer overflow).
 2. Which part of their code is causing the issue.
 3. How to think about fixing it without simply providing the entire copy-paste solution.
-Keep the explanation clear, educational, and structured in bullet points.`;
+Keep the explanation clear, professional, and structured in bullet points.`;
 
   return await generateWithFallback(prompt);
 };
@@ -459,7 +459,7 @@ export const reviewCodeComplexity = async ({
     required: ["timeComplexity", "spaceComplexity", "explanation", "isOptimal"],
   };
 
-  const prompt = `Analyze the time and space complexity of this student solution for "${problemTitle}".
+  const prompt = `Analyze the time and space complexity of this participant solution for "${problemTitle}".
 Language: ${language}
 Code:
 \`\`\`${language}

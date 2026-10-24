@@ -1,6 +1,7 @@
 import { Problem } from "../models/problem.model.js"
 import { Submission } from "../models/submission.model.js"
 import { getLanguageById, submitBatch, submitToken, ensureCppHeader } from "../utils/problem.utility.js"
+import { TestAttempt } from "../models/testAttempt.model.js"
 
 
 export const submitCode = async(req,res)=>{
@@ -117,15 +118,47 @@ export const submitCode = async(req,res)=>{
 
         await submittedResult.save()
 
-        //check whether the problemId is present in problemSolved in User Schema.
-        //If not present we will store it in DB.
-        //req.result has user information
-        if(status === 'accepted' && !req.result.problemSolved.includes(problemId)){
-            req.result.problemSolved.push(problemId)
-            await req.result.save()
+        let earnedMarks = 0;
+        let maxMarks = 10;
+
+        if (req.body.testAttemptId) {
+            const attempt = await TestAttempt.findOne({ 
+                _id: req.body.testAttemptId, 
+                participant: userId, 
+                status: "in_progress" 
+            }).populate("test");
+            if (attempt) {
+                const answer = attempt.answers.find((item) => String(item.question) === String(problemId));
+                if (answer) {
+                    const totalCases = (problem.hiddenTestCases && problem.hiddenTestCases.length > 0) ? problem.hiddenTestCases.length : 1;
+                    const passedCases = submittedResult.testCasesPassed || 0;
+                    const configuredMarks = (attempt.test?.questionMarks || []).find((qm) => String(qm.question) === String(problemId))?.marks || 10;
+                    maxMarks = configuredMarks;
+                    earnedMarks = Math.round((passedCases / totalCases) * configuredMarks * 10) / 10;
+
+                    answer.submission = submittedResult._id;
+                    answer.code = normalizedCode;
+                    answer.language = language;
+                    answer.testCasesPassed = passedCases;
+                    answer.testCasesTotal = totalCases;
+                    answer.maxMarks = maxMarks;
+                    answer.earnedMarks = earnedMarks;
+
+                    attempt.score = Math.round((attempt.answers || []).reduce((sum, a) => sum + (a.earnedMarks || 0), 0) * 10) / 10;
+                    attempt.total = (attempt.answers || []).reduce((sum, a) => sum + (a.maxMarks || 10), 0);
+                    await attempt.save();
+                }
+            }
         }
 
-        return res.status(201).send(submittedResult)
+        const responseData = submittedResult.toObject();
+        const isStaff = ["admin", "evaluator"].includes(req.result.role);
+        if (isStaff) {
+            responseData.earnedMarks = earnedMarks;
+            responseData.maxMarks = maxMarks;
+        }
+
+        return res.status(201).json(responseData)
 
 
     } catch (error) {

@@ -20,6 +20,7 @@ import {
   Filter,
   Save,
   Edit3,
+  Upload,
 } from "lucide-react";
 
 import mammoth from "mammoth";
@@ -144,11 +145,11 @@ export default function EditProblemPage() {
       const fetchList = async () => {
         try {
           setLoadingList(true);
-          const res = await axiosClient.get("/problem/getAllProblem");
+          const res = await axiosClient.get("/admin/problems");
           setAllProblems(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
           console.error("Error fetching problems:", err);
-          showToast("Failed to load problems list", "error");
+          showToast("Failed to load problem list", "error");
         } finally {
           setLoadingList(false);
         }
@@ -156,6 +157,40 @@ export default function EditProblemPage() {
       fetchList();
     }
   }, [id]);
+
+  const handleDeleteProblem = async (problemId, problemTitle) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently delete "${problemTitle}" from the Problem list?\n\nThis will remove it from the question bank.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await axiosClient.delete(`/problem/delete/${problemId}`);
+      setAllProblems((prev) => prev.filter((p) => p._id !== problemId));
+      showToast(`Problem "${problemTitle}" deleted successfully.`, "success");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to delete problem.", "error");
+    }
+  };
+
+  const handleDeleteCurrentProblem = async () => {
+    const title = getValues("title") || "this problem";
+    if (
+      !window.confirm(
+        `Permanently delete "${title}" from the Problem list?\n\nThis cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    try {
+      await axiosClient.delete(`/problem/delete/${id}`);
+      navigate("/admin/editProblem");
+    } catch (err) {
+      showToast(err.response?.data?.message || "Failed to delete problem.", "error");
+    }
+  };
 
   // If ID is provided, fetch full problem details including hidden testcases
   useEffect(() => {
@@ -420,7 +455,7 @@ export default function EditProblemPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-3">
-                <Edit3 className="w-8 h-8 text-indigo-600" />
+                <Edit3 className="w-8 h-8 text-zinc-400" />
                 Select Problem to Edit
               </h1>
               <p className="text-slate-500 mt-1 text-sm">
@@ -430,7 +465,7 @@ export default function EditProblemPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate("/admin/createProblem")}
-                className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-sm cursor-pointer"
+                className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl transition shadow-sm cursor-pointer"
               >
                 + Create New
               </button>
@@ -452,14 +487,14 @@ export default function EditProblemPage() {
                 placeholder="Search problem by title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-zinc-700 focus:outline-none"
               />
             </div>
             <div className="md:col-span-3">
               <select
                 value={selectedDifficulty}
                 onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-zinc-700 bg-white"
               >
                 <option value="all">All Difficulties</option>
                 <option value="easy">Easy</option>
@@ -471,7 +506,7 @@ export default function EditProblemPage() {
               <select
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
-                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                className="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-zinc-700 bg-white"
               >
                 <option value="all">All Topics / Tags</option>
                 {["array", "linkedList", "graph", "tree", "stack", "queue", "dp", "strings", "search"].map((t) => (
@@ -487,7 +522,7 @@ export default function EditProblemPage() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {loadingList ? (
               <div className="p-12 text-center text-slate-500 flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
                 <span>Loading problems...</span>
               </div>
             ) : filteredList.length === 0 ? (
@@ -523,13 +558,25 @@ export default function EditProblemPage() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => navigate(`/admin/editProblem/${prob._id}`)}
-                      className="self-end md:self-auto px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition flex items-center gap-2 shadow-sm cursor-pointer"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      Edit Problem
-                    </button>
+                    <div className="flex items-center gap-2 self-end md:self-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProblem(prob._id, prob.title)}
+                        className="px-3 py-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        title="Delete question permanently"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Delete</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/editProblem/${prob._id}`)}
+                        className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -544,7 +591,7 @@ export default function EditProblemPage() {
   if (loadingProblem) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
         <p className="text-slate-600 text-sm font-medium">Loading problem data for editing...</p>
       </div>
     );
@@ -560,14 +607,23 @@ export default function EditProblemPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
-              <Edit3 className="w-8 h-8 text-indigo-600" />
+              <Edit3 className="w-8 h-8 text-zinc-400" />
               Edit Problem
             </h1>
             <p className="text-slate-500 mt-1">
               Update challenge specifications, visible/hidden test cases, and solution code.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDeleteCurrentProblem}
+              className="px-4 py-2 text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+              title="Delete this problem permanently"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Delete Problem</span>
+            </button>
             <button
               onClick={() => navigate("/admin/editProblem")}
               className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 shadow-sm cursor-pointer"
@@ -584,22 +640,20 @@ export default function EditProblemPage() {
         </div>
 
         {/* AI ENHANCE / REGENERATE HERO CARD */}
-        <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-30 pointer-events-none" />
-
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
           <div className="relative z-10 space-y-5">
             <div className="flex items-center gap-3">
-              <span className="p-2 bg-indigo-500/30 rounded-xl backdrop-blur-md border border-indigo-400/30">
-                <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
+              <span className="p-2 bg-zinc-800 rounded-xl border border-zinc-700">
+                <Sparkles className="w-5 h-5 text-zinc-300" />
               </span>
               <div>
-                <h2 className="text-xl font-bold flex items-center gap-2">
+                <h2 className="text-xl font-bold flex items-center gap-2 tracking-tight">
                   Gemini AI Problem Refiner
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold border border-amber-300/30">
-                    AI Assistant
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                    Refinement Mode
                   </span>
                 </h2>
-                <p className="text-xs text-indigo-200">
+                <p className="text-xs text-zinc-400 mt-1">
                   Ask AI to rewrite the problem description, enhance test cases, or add more edge cases.
                 </p>
               </div>
@@ -612,7 +666,7 @@ export default function EditProblemPage() {
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   placeholder="e.g. Add 20 diverse hidden test cases including negatives and large limits..."
-                  className="w-full h-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm"
+                  className="w-full h-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -636,7 +690,7 @@ export default function EditProblemPage() {
 
               <div className="md:col-span-2 flex items-center justify-center gap-1.5 bg-slate-900/90 border border-white/20 rounded-xl px-2 py-2">
                 <div className="text-center">
-                  <span className="block text-[9px] uppercase font-bold text-indigo-300">Visible</span>
+                  <span className="block text-[9px] uppercase font-bold text-zinc-400">Visible</span>
                   <input
                     type="number"
                     min={1}
@@ -649,7 +703,7 @@ export default function EditProblemPage() {
                 </div>
                 <span className="text-slate-500 font-bold text-xs mt-3">/</span>
                 <div className="text-center">
-                  <span className="block text-[9px] uppercase font-bold text-purple-300">Hidden</span>
+                  <span className="block text-[9px] uppercase font-bold text-zinc-400">Hidden</span>
                   <input
                     type="number"
                     min={1}
@@ -698,7 +752,7 @@ export default function EditProblemPage() {
           {/* BASIC OVERVIEW */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-              <FileText className="w-5 h-5 text-indigo-600" />
+              <FileText className="w-5 h-5 text-zinc-400" />
               1. Problem Overview
             </h2>
 
@@ -710,7 +764,7 @@ export default function EditProblemPage() {
                 <input
                   {...register("title")}
                   placeholder="e.g. Maximum Subarray Sum"
-                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-zinc-700 focus:outline-none"
                 />
               </div>
 
@@ -722,7 +776,7 @@ export default function EditProblemPage() {
                   {...register("description")}
                   placeholder="Describe the problem, input format, output format, constraints, and examples..."
                   rows={6}
-                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm font-mono focus:ring-2 focus:ring-zinc-700 focus:outline-none"
                 />
               </div>
 
@@ -733,7 +787,7 @@ export default function EditProblemPage() {
                   </label>
                   <select
                     {...register("difficultyLevel")}
-                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-zinc-700 focus:outline-none"
                   >
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
@@ -747,7 +801,7 @@ export default function EditProblemPage() {
                   </label>
                   <select
                     {...register("tags")}
-                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm bg-white focus:ring-2 focus:ring-zinc-700 focus:outline-none"
                   >
                     <option value="array">Array</option>
                     <option value="linkedList">Linked List</option>
@@ -768,13 +822,13 @@ export default function EditProblemPage() {
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center border-b pb-3">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                <CheckCircle2 className="w-5 h-5 text-zinc-400" />
                 2. Visible Sample Test Cases ({visibleFields.length})
               </h2>
               <button
                 type="button"
                 onClick={() => appendVisible({ input: "", output: "", explanation: "" })}
-                className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg border border-zinc-300 cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Add Testcase
               </button>
@@ -837,17 +891,18 @@ export default function EditProblemPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b pb-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-purple-600" />
+                  <Code2 className="w-5 h-5 text-zinc-400" />
                   3. Hidden Verification Test Cases ({hiddenFields.length})
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Used by Codebox to evaluate student code submissions secretly.
+                  Used by Codebox to evaluate participant code submissions secretly.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-300 cursor-pointer">
-                  <span>📁 Upload Document</span>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-zinc-300 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 rounded-lg border border-zinc-700 cursor-pointer transition">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Document</span>
                   <input
                     type="file"
                     accept=".txt,.docx,.pdf"
@@ -859,7 +914,7 @@ export default function EditProblemPage() {
                 <button
                   type="button"
                   onClick={() => appendHidden({ input: "", output: "" })}
-                  className="flex items-center gap-1.5 text-xs font-bold text-purple-600 hover:text-purple-800 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-bold text-zinc-800 hover:text-black bg-zinc-100 px-3 py-1.5 rounded-lg border border-zinc-300 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" /> Add Hidden
                 </button>
@@ -885,7 +940,7 @@ export default function EditProblemPage() {
                       {...register(`hiddenTestCases.${i}.input`)}
                       rows={2}
                       placeholder="Hidden input..."
-                      className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-purple-500"
+                      className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-zinc-700"
                     />
                   </div>
                   <div>
@@ -894,7 +949,7 @@ export default function EditProblemPage() {
                       {...register(`hiddenTestCases.${i}.output`)}
                       rows={2}
                       placeholder="Expected output..."
-                      className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-purple-500"
+                      className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-zinc-700"
                     />
                   </div>
                 </div>
@@ -905,13 +960,13 @@ export default function EditProblemPage() {
           {/* STARTER CODE */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-              <Code2 className="w-5 h-5 text-indigo-600" />
+              <Code2 className="w-5 h-5 text-zinc-400" />
               4. Language Starter Boilerplate
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {["c++", "java", "javascript"].map((lang, i) => (
                 <div key={i} className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                     {lang} Starter Code
                   </span>
                   <input type="hidden" {...register(`startCode.${i}.language`)} value={lang} />
@@ -919,7 +974,7 @@ export default function EditProblemPage() {
                     {...register(`startCode.${i}.initialCode`)}
                     rows={8}
                     placeholder={`Starter boilerplate for ${lang}...`}
-                    className="border border-slate-300 rounded-lg p-2.5 w-full text-xs font-mono focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full text-xs font-mono focus:ring-1 focus:ring-zinc-700 bg-white"
                   />
                 </div>
               ))}
@@ -956,31 +1011,42 @@ export default function EditProblemPage() {
           </div>
 
           {/* SUBMIT BUTTON */}
-          <div className="flex items-center justify-end gap-4 pt-4">
+          <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200">
             <button
               type="button"
-              onClick={() => navigate("/admin/editProblem")}
-              className="px-6 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-100 transition-all text-sm cursor-pointer"
+              onClick={handleDeleteCurrentProblem}
+              className="px-4 py-2.5 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer"
             >
-              Cancel
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Delete Problem</span>
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex items-center gap-2 cursor-pointer"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Validating & Updating in Codebox...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-5 h-5" />
-                  <span>Update Problem</span>
-                </>
-              )}
-            </button>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/admin/editProblem")}
+                className="px-6 py-3 rounded-xl border border-slate-300 text-slate-700 font-semibold hover:bg-slate-100 transition-all text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-8 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold shadow-lg shadow-zinc-900/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex items-center gap-2 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Validating & Updating in Codebox...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    <span>Update Problem</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

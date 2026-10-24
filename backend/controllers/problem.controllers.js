@@ -1,7 +1,7 @@
-
-
 import { Submission } from "../models/submission.model.js"
 import { User } from "../models/user.model.js"
+import { Organization } from "../models/organization.model.js"
+import { TestAttempt } from "../models/testAttempt.model.js"
 import { getLanguageById, submitBatch, submitToken, ensureCppHeader } from "../utils/problem.utility.js"
 import { Problem } from "../models/problem.model.js"
 import {
@@ -47,8 +47,6 @@ export const createProblem = async(req,res)=>{
                 return item;
             });
         }
-
-        //! if the below for loop executes fully means admin ne jo data bheja hia wo ekdum picture perfect hai aur usko ham DB mein store kar skte hai 
         
         for(const {language , completeCode} of processedRefSolution){
 
@@ -93,12 +91,18 @@ export const createProblem = async(req,res)=>{
             
         }
 
+        // Resolve user's organization
+        const orgId = req.result.organization 
+            || (await Organization.findOne({ createdBy: req.result._id }))?._id;
+
         //now we will store it in db
         const userProblem = await Problem.create({
             ...req.body,
             startCode: processedStartCode,
             referenceSolution: processedRefSolution,
-            problemCreator : req.result._id
+            problemCreator: req.result._id,
+            createdBy: req.result._id,
+            organization: orgId || null
         })
 
         res.status(201).json({message:"Problem created successfully"})
@@ -126,13 +130,26 @@ export const deleteProblem = async(req,res)=>{
 }
 
 export const getProblemById = async(req,res)=>{
-    const {id} = req.params
+    const {id} = req.params;
     try {
         if(!id){
-            return res.status(400).send("Id is Missing.")
+            return res.status(400).send("Id is Missing.");
+        }
+
+        const isStaff = ["admin", "evaluator"].includes(req.result?.role);
+        if (!isStaff) {
+            // Participants can only access a problem statement if it is part of their active test attempt
+            const activeAttempt = await TestAttempt.findOne({
+                participant: req.result._id,
+                status: "in_progress",
+                "answers.question": id
+            });
+            if (!activeAttempt) {
+                return res.status(403).json({ message: "Access denied. Confidential examination question." });
+            }
         }
         
-        const getProblem = await Problem.findById(id).select('title description difficultyLevel tags visibleTestCases startCode referenceSolution' )
+        const getProblem = await Problem.findById(id).select('title description difficultyLevel tags visibleTestCases startCode referenceSolution' );
 
         if(!getProblem){
             return res.status(404).send("Problem is missing")
@@ -166,7 +183,7 @@ export const getProblemById = async(req,res)=>{
 }
 
 /**
- * Teacher/Admin: Fetch complete problem including hiddenTestCases for editing
+ * Evaluator/Admin: Fetch complete problem including hiddenTestCases for editing
  */
 export const getProblemByIdForAdmin = async (req, res) => {
     const { id } = req.params;
@@ -208,7 +225,7 @@ export const getProblemByIdForAdmin = async (req, res) => {
 };
 
 /**
- * Teacher/Admin: Update an existing coding problem
+ * Evaluator/Admin: Update an existing coding problem
  */
 export const updateProblem = async (req, res) => {
     const { id } = req.params;
@@ -327,55 +344,46 @@ export const updateProblem = async (req, res) => {
     }
 };
 
-export const getAllProblem = async(req,res)=>{
-    
+export const getAllProblem = async(req, res)=>{
     try {
-    
-        const getProblem = await Problem.find({}).select("_id title difficultyLevel tags ")
-
-        if(getProblem.length == 0){
-            return res.status(404).send("Problem is missing")
+        const staffRoles = ["admin", "evaluator"];
+        if (!staffRoles.includes(req.result.role)) {
+            return res.status(403).json({ message: "Access denied: Restricted to evaluators and admins." });
         }
-        return res.status(200).send(getProblem)
 
+        // 1. Resolve user's organization
+        const orgId = req.result.organization 
+            || (await Organization.findOne({ createdBy: req.result._id }))?._id;
+
+        if (!orgId) {
+            return res.status(200).json([]);
+        }
+
+        // 2. Directly fetch all problems belonging to this organization
+        const problems = await Problem.find({ organization: orgId })
+            .select("_id title difficultyLevel tags createdAt problemCreator createdBy organization")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json(problems || []);
     } catch (error) {
-        res.status(500).json({message:error.message})
+        res.status(500).json({ message: error.message });
     }
 }
 
-export const solvedAllProblemByUser = async(req,res)=>{
+export const submittedProblem = async (req, res) => {
     try {
-        
-        const userId = req.result._id
-        const user = await User.findById(userId).populate({
-            path:"problemSolved",
-            select:"_id title difficultyLevel tags"
-        })
-        res.status(200).send(user.problemSolved)
+        const userId = req.result._id;
+        const problemId = req.params.pid;
+        const ans = await Submission.find({ userId, problemId }).sort({ createdAt: -1 });
 
+        return res.status(200).json(ans);
     } catch (error) {
-        res.status(500).send("Error "+error || "Internal Server Error")
-    }
-}
-
-export const submittedProblem = async(req,res)=>{
-    try {
-        const userId = req.result._id
-        const problemId = req.params.pid
-        const ans = await Submission.find({userId , problemId})
-
-        if(ans.length == 0){
-            return res.status(200).send([])
-        }
-
-        return res.status(200).send(ans)
-    } catch (error) {
-        return res.status(500).send("Internal server error")
+        return res.status(500).json({ message: error.message || "Internal server error" });
     }
 }
 
 /**
- * Teacher/Admin AI Copilot: Automatically generate a problem from a prompt/topic
+ * Evaluator/Admin AI Copilot: Automatically generate a problem from a prompt/topic
  */
 export const generateAiProblem = async (req, res) => {
     try {
@@ -406,57 +414,65 @@ export const generateAiProblem = async (req, res) => {
 }
 
 /**
- * Student AI Copilot: Socratic hint without spoiling code
+ * Participant AI Copilot: Socratic hint without spoiling code
  */
 export const getAiHint = async (req, res) => {
     try {
-        const { problemId, code, language, failedTestCase, hintNumber = 1 } = req.body
+        const { problemId, title, description, code, userCode, language, failedTestCase, hintNumber = 1 } = req.body;
 
-        if (!problemId) {
-            return res.status(400).json({ message: "Problem ID is required" })
+        const effectiveCode = code || userCode || "";
+
+        let problemTitle = title || "";
+        let problemDescription = description || "";
+
+        if (problemId) {
+            const problem = await Problem.findById(problemId);
+            if (problem) {
+                problemTitle = problem.title;
+                problemDescription = problem.description;
+            }
         }
 
-        const problem = await Problem.findById(problemId)
-        if (!problem) {
-            return res.status(404).json({ message: "Problem not found" })
+        if (!problemTitle && !problemDescription) {
+            return res.status(400).json({ message: "Problem title, description, or problemId is required" });
         }
 
-        // Track user's hint count
-        if (req.result?._id) {
-            const user = await User.findById(req.result._id)
-            if (user) {
+        // Track user's hint count if problemId is present
+        if (req.result?._id && problemId) {
+            const user = await User.findById(req.result._id);
+            if (user && Array.isArray(user.hintUsage)) {
                 const existingUsage = user.hintUsage.find(
-                    (h) => h.problemId.toString() === problemId.toString()
-                )
+                    (h) => h.problemId?.toString() === problemId.toString()
+                );
                 if (existingUsage) {
-                    existingUsage.count += 1
+                    existingUsage.count += 1;
                 } else {
-                    user.hintUsage.push({ problemId, count: 1 })
+                    user.hintUsage.push({ problemId, count: 1 });
                 }
-                await user.save()
+                await user.save();
             }
         }
 
         const hint = await generateSocraticHint({
-            problemTitle: problem.title,
-            problemDescription: problem.description,
-            code,
-            language,
+            problemTitle,
+            problemDescription,
+            code: effectiveCode,
+            language: language || "c++",
             failedTestCase,
             hintNumber
-        })
+        });
 
-        return res.status(200).json({ success: true, hint, hintNumber })
+        return res.status(200).json({ success: true, hint, hintNumber });
     } catch (error) {
-        console.error("AI Hint error:", error)
+        console.error("AI Hint error:", error);
         return res.status(500).json({
             message: error.message || "Failed to get AI hint"
-        })
+        });
     }
 }
 
 /**
- * Student AI Copilot: Explain why code failed (Runtime error, Wrong Answer, etc.)
+ * Participant AI Copilot: Explain why code failed (Runtime error, Wrong Answer, etc.)
  */
 export const getAiExplanation = async (req, res) => {
     try {
@@ -490,7 +506,7 @@ export const getAiExplanation = async (req, res) => {
 }
 
 /**
- * Student AI Copilot: Time & Space complexity review
+ * Participant AI Copilot: Time & Space complexity review
  */
 export const getAiComplexity = async (req, res) => {
     try {

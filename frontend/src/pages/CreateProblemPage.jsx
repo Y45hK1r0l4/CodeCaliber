@@ -51,26 +51,19 @@ export default function CreateProblemPage() {
   // AI Copilot state
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiDifficulty, setAiDifficulty] = useState("medium");
-  const [aiTag, setAiTag] = useState("array");
+  const [aiTag] = useState("array");
   const [aiVisibleCount, setAiVisibleCount] = useState(3);
   const [aiHiddenCount, setAiHiddenCount] = useState(15);
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [aiSuccessMsg, setAiSuccessMsg] = useState("");
 
-  const quickPrompts = [
-    { label: "Kadane's Algorithm", topic: "Find maximum subarray sum using Kadane's algorithm", tag: "array", diff: "medium" },
-    { label: "Valid Parentheses", topic: "Check balanced brackets containing (), {}, [] using a Stack", tag: "stack", diff: "easy" },
-    { label: "Coin Change (DP)", topic: "Find minimum coins needed to make amount X using dynamic programming", tag: "dp", diff: "medium" },
-    { label: "Detect Graph Cycle", topic: "Detect if a directed graph contains a cycle using Kahn's algorithm or DFS", tag: "graph", diff: "hard" },
-    { label: "Tree LCA", topic: "Find Lowest Common Ancestor of two nodes in a Binary Search Tree", tag: "tree", diff: "medium" },
-  ];
 
   const showToast = (message, type) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, reset } = useForm({
     resolver: zodResolver(problemSchema),
     defaultValues: {
       title: "",
@@ -269,7 +262,7 @@ export default function CreateProblemPage() {
       }
       replace(parsed);
       showToast(`${parsed.length} hidden testcases loaded`, "success");
-    } catch (err) {
+    } catch {
       showToast("Invalid JSON file", "error");
     }
   };
@@ -340,7 +333,7 @@ export default function CreateProblemPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-3">
-              <Code2 className="w-8 h-8 text-indigo-600" />
+              <Code2 className="w-8 h-8 text-zinc-400" />
               Create Coding Problem
             </h1>
             <p className="text-slate-500 mt-1">
@@ -356,46 +349,23 @@ export default function CreateProblemPage() {
         </div>
 
         {/* AI COPILOT HERO CARD */}
-        <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-30 pointer-events-none" />
-          
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
           <div className="relative z-10 space-y-6">
             <div className="flex items-center gap-3">
-              <span className="p-2 bg-indigo-500/30 rounded-xl backdrop-blur-md border border-indigo-400/30">
-                <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />
+              <span className="p-2 bg-zinc-800 rounded-xl border border-zinc-700">
+                <Sparkles className="w-5 h-5 text-zinc-300" />
               </span>
               <div>
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  Gemini AI Problem Copilot
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-semibold border border-amber-300/30">
-                    Fully Automatic
+                <h2 className="text-xl font-bold flex items-center gap-2 tracking-tight">
+                  Gemini AI Problem Synthesizer
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-semibold border border-zinc-700">
+                    Automated
                   </span>
                 </h2>
-                <p className="text-sm text-indigo-200">
-                  Type a topic or concept. AI synthesizes problem statement, constraints, visible & edge-case test cases, and runnable solutions in C++, Java, and JS.
+                <p className="text-xs text-zinc-400 mt-1">
+                  Type an algorithmic concept. AI automatically synthesizes problem statements, constraints, test suites, and reference solutions in C++, Java, and JS.
                 </p>
               </div>
-            </div>
-
-            {/* QUICK SUGGESTIONS */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-indigo-300 font-medium">Quick Presets:</span>
-              {quickPrompts.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => {
-                    setAiPrompt(preset.topic);
-                    setAiTag(preset.tag);
-                    setAiDifficulty(preset.diff);
-                    handleGenerateWithAi(preset.topic, preset.tag, preset.diff);
-                  }}
-                  disabled={isGeneratingAi}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-indigo-800/80 hover:bg-indigo-700 border border-indigo-600/50 text-indigo-100 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer"
-                >
-                  ⚡ {preset.label}
-                </button>
-              ))}
             </div>
 
             {/* INPUT CONTROLS */}
@@ -406,7 +376,7 @@ export default function CreateProblemPage() {
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   placeholder="e.g. Medium problem on Binary Search Tree (or specify '5 visible, 20 hidden')..."
-                  className="w-full h-full px-4 py-3 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm"
+                  className="w-full h-full px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-700 text-sm"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -420,7 +390,7 @@ export default function CreateProblemPage() {
                 <select
                   value={aiDifficulty}
                   onChange={(e) => setAiDifficulty(e.target.value)}
-                  className="w-full h-full px-3 py-3 rounded-xl bg-slate-900 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm cursor-pointer"
+                  className="w-full h-full px-3 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white focus:outline-none focus:border-zinc-700 text-sm cursor-pointer"
                 >
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
@@ -428,29 +398,29 @@ export default function CreateProblemPage() {
                 </select>
               </div>
 
-              <div className="md:col-span-2 flex items-center justify-center gap-1.5 bg-slate-900/90 border border-white/20 rounded-xl px-2 py-2">
+              <div className="md:col-span-2 flex items-center justify-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-xl px-2 py-2">
                 <div className="text-center">
-                  <span className="block text-[9px] uppercase font-bold text-indigo-300">Visible</span>
+                  <span className="block text-[9px] uppercase font-bold text-zinc-400 font-mono">Visible</span>
                   <input
                     type="number"
                     min={1}
                     max={10}
                     value={aiVisibleCount}
                     onChange={(e) => setAiVisibleCount(e.target.value)}
-                    className="w-10 bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-center text-amber-300 font-bold text-xs focus:ring-1 focus:ring-amber-300"
+                    className="w-10 bg-zinc-900 border border-zinc-800 rounded px-1 py-0.5 text-center text-white font-bold text-xs focus:ring-1 focus:ring-zinc-600"
                     title="Visible Test Cases (Default: 3)"
                   />
                 </div>
-                <span className="text-slate-500 font-bold text-xs mt-3">/</span>
+                <span className="text-zinc-600 font-bold text-xs mt-3">/</span>
                 <div className="text-center">
-                  <span className="block text-[9px] uppercase font-bold text-purple-300">Hidden</span>
+                  <span className="block text-[9px] uppercase font-bold text-zinc-400 font-mono">Hidden</span>
                   <input
                     type="number"
                     min={1}
                     max={30}
                     value={aiHiddenCount}
                     onChange={(e) => setAiHiddenCount(e.target.value)}
-                    className="w-11 bg-slate-800 border border-slate-700 rounded px-1 py-0.5 text-center text-amber-300 font-bold text-xs focus:ring-1 focus:ring-amber-300"
+                    className="w-11 bg-zinc-900 border border-zinc-800 rounded px-1 py-0.5 text-center text-white font-bold text-xs focus:ring-1 focus:ring-zinc-600"
                     title="Hidden Test Cases (Default: 15)"
                   />
                 </div>
@@ -461,25 +431,25 @@ export default function CreateProblemPage() {
                   type="button"
                   onClick={() => handleGenerateWithAi()}
                   disabled={isGeneratingAi}
-                  className="w-full h-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer text-sm"
+                  className="w-full h-full py-3 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-50 cursor-pointer text-sm"
                 >
                   {isGeneratingAi ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Synthesizing...</span>
                     </>
                   ) : (
                     <>
-                      <Wand2 className="w-5 h-5" />
-                      <span>Generate Problem</span>
+                      <Wand2 className="w-4 h-4" />
+                      <span>Generate Challenge</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-indigo-200/90 px-1 pt-1">
-              <span>⚡ Default test cases: <strong>3 Visible</strong> & <strong>15 Hidden</strong>. You can tweak the counts above or mention in prompt (e.g. <em>&quot;5 visible and 20 hidden&quot;</em>).</span>
+            <div className="flex items-center justify-between text-xs text-zinc-400 px-1 pt-1 font-mono">
+              <span>Standard allocation: <strong>3 Visible</strong> &amp; <strong>15 Hidden</strong> test cases.</span>
             </div>
 
             {/* SUCCESS BANNER */}
@@ -497,7 +467,7 @@ export default function CreateProblemPage() {
           {/* BASIC DETAILS */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-              <FileText className="w-5 h-5 text-indigo-600" />
+              <FileText className="w-5 h-5 text-zinc-400" />
               1. Problem Overview
             </h2>
 
@@ -509,7 +479,7 @@ export default function CreateProblemPage() {
                 <input
                   {...register("title")}
                   placeholder="e.g. Maximum Subarray Sum"
-                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-zinc-700 focus:outline-none"
                 />
               </div>
 
@@ -521,7 +491,7 @@ export default function CreateProblemPage() {
                   {...register("description")}
                   placeholder="Describe the problem, input format, output format, constraints, and examples..."
                   rows={6}
-                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="border border-slate-300 rounded-lg p-2.5 w-full text-sm font-mono focus:ring-2 focus:ring-zinc-700 focus:outline-none"
                 />
               </div>
 
@@ -532,7 +502,7 @@ export default function CreateProblemPage() {
                   </label>
                   <select
                     {...register("difficultyLevel")}
-                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-zinc-700 focus:outline-none bg-white"
                   >
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
@@ -546,7 +516,7 @@ export default function CreateProblemPage() {
                   </label>
                   <select
                     {...register("tags")}
-                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full text-sm focus:ring-2 focus:ring-zinc-700 focus:outline-none bg-white"
                   >
                     <option value="array">Array</option>
                     <option value="linkedList">Linked List</option>
@@ -573,7 +543,7 @@ export default function CreateProblemPage() {
               <button
                 type="button"
                 onClick={() => append({ input: "", output: "", explanation: "" })}
-                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-indigo-800 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Add Test Case
               </button>
@@ -583,7 +553,7 @@ export default function CreateProblemPage() {
               {visibleFields.map((f, i) => (
                 <div key={f.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3 relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-md">
+                    <span className="text-xs font-bold text-zinc-800 bg-zinc-200 px-2.5 py-0.5 rounded-md">
                       Example Test Case {i + 1}
                     </span>
                     {visibleFields.length > 1 && (
@@ -604,7 +574,7 @@ export default function CreateProblemPage() {
                         {...register(`visibleTestCases.${i}.input`)}
                         placeholder="e.g. 5\n1 2 3 4 5"
                         rows={2}
-                        className="border border-slate-300 rounded-lg p-2 w-full text-xs font-mono focus:ring-1 focus:ring-indigo-500 bg-white"
+                        className="border border-slate-300 rounded-lg p-2 w-full text-xs font-mono focus:ring-1 focus:ring-zinc-700 bg-white"
                       />
                     </div>
                     <div>
@@ -613,7 +583,7 @@ export default function CreateProblemPage() {
                         {...register(`visibleTestCases.${i}.output`)}
                         placeholder="e.g. 15"
                         rows={2}
-                        className="border border-slate-300 rounded-lg p-2 w-full text-xs font-mono focus:ring-1 focus:ring-indigo-500 bg-white"
+                        className="border border-slate-300 rounded-lg p-2 w-full text-xs font-mono focus:ring-1 focus:ring-zinc-700 bg-white"
                       />
                     </div>
                   </div>
@@ -623,7 +593,7 @@ export default function CreateProblemPage() {
                     <input
                       {...register(`visibleTestCases.${i}.explanation`)}
                       placeholder="e.g. The sum of the whole array is 15."
-                      className="border border-slate-300 rounded-lg p-2 w-full text-xs focus:ring-1 focus:ring-indigo-500 bg-white"
+                      className="border border-slate-300 rounded-lg p-2 w-full text-xs focus:ring-1 focus:ring-zinc-700 bg-white"
                     />
                   </div>
                 </div>
@@ -636,7 +606,7 @@ export default function CreateProblemPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-purple-600" />
+                  <Bot className="w-5 h-5 text-zinc-400" />
                   3. Hidden Test Cases ({hiddenFields.length})
                 </h2>
                 <p className="text-xs text-slate-500">
@@ -666,7 +636,7 @@ export default function CreateProblemPage() {
                 <button
                   type="button"
                   onClick={() => appendHidden({ input: "", output: "" })}
-                  className="flex items-center gap-1 text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg cursor-pointer"
+                  className="flex items-center gap-1 text-xs font-semibold text-zinc-800 bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-lg cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add One
                 </button>
@@ -697,7 +667,7 @@ export default function CreateProblemPage() {
                         {...register(`hiddenTestCases.${i}.input`)}
                         rows={2}
                         placeholder="Hidden input..."
-                        className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-purple-500"
+                        className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-zinc-700"
                       />
                     </div>
                     <div>
@@ -706,7 +676,7 @@ export default function CreateProblemPage() {
                         {...register(`hiddenTestCases.${i}.output`)}
                         rows={2}
                         placeholder="Expected output..."
-                        className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-purple-500"
+                        className="border border-slate-300 rounded p-1.5 w-full font-mono text-[11px] bg-white focus:ring-1 focus:ring-zinc-700"
                       />
                     </div>
                   </div>
@@ -718,13 +688,13 @@ export default function CreateProblemPage() {
           {/* STARTER CODE */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-3">
-              <Code2 className="w-5 h-5 text-indigo-600" />
+              <Code2 className="w-5 h-5 text-zinc-400" />
               4. Language Starter Boilerplate
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {["c++", "java", "javascript"].map((lang, i) => (
                 <div key={i} className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                     {lang} Starter Code
                   </span>
                   <input type="hidden" {...register(`startCode.${i}.language`)} value={lang} />
@@ -732,7 +702,7 @@ export default function CreateProblemPage() {
                     {...register(`startCode.${i}.initialCode`)}
                     rows={8}
                     placeholder={`Starter boilerplate for ${lang}...`}
-                    className="border border-slate-300 rounded-lg p-2.5 w-full text-xs font-mono focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="border border-slate-300 rounded-lg p-2.5 w-full text-xs font-mono focus:ring-1 focus:ring-zinc-700 bg-white"
                   />
                 </div>
               ))}
@@ -780,7 +750,7 @@ export default function CreateProblemPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex items-center gap-2 cursor-pointer"
+              className="px-8 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-sm flex items-center gap-2 cursor-pointer"
             >
               {isSubmitting ? (
                 <>

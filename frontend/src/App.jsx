@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import './App.css'
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { checkAuth } from "./authSlice";
@@ -9,7 +8,6 @@ import Login from './pages/Login';
 import HomePage from './pages/HomePage';
 import Navbar from './components/Navbar';
 import ProblemsPage from './pages/ProblemsPage';
-import AboutPage from './pages/AboutPage';
 import ProfilePage from './pages/ProfilePage';
 import SolveProblemPage from './pages/SolveProblemPage';
 import AdminPanel from './pages/Adminpanel';
@@ -19,10 +17,14 @@ import RegisterAdminPage from './pages/RegisterAdminPage'
 import CreateProblemPage from './pages/CreateProblemPage'
 import EditProblemPage from './pages/EditProblemPage'
 import DeleteProblemPage from './pages/DeleteProblemPage'
-import LeaderboardPage from './pages/LeaderBoardPage';
+import AssessmentsPage from './pages/AssessmentsPage';
+import TestAttemptPage from './pages/TestAttemptPage';
+import CreateTestPage from './pages/CreateTestPage';
+import TestPerformancePage from './pages/TestPerformancePage';
+import AssessmentHistoryPage from './pages/AssessmentHistoryPage';
 
 function App() {
-  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -31,8 +33,11 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg"></span>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#f2eee7] text-[#1c1b19]">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#1c1b19] font-serif text-xl font-bold">
+          A
+        </div>
+        <p className="font-mono text-[10px] uppercase tracking-[.2em] text-black/50">Preparing your workspace</p>
       </div>
     );
   }
@@ -54,12 +59,16 @@ function App() {
 
 
         {/*Authenticated Routes */}
-        <Route path="/problems" element={<ProblemsPage />} />
-        <Route path="/problem/:id" element={<SolveProblemPage />} />
-        <Route path="/about" element={<AboutPage />} />
+        <Route path="/admin/problems" element={<AdminRoute><ProblemsPage /></AdminRoute>} />
+        <Route path="/problems" element={<Navigate to="/admin/problems" replace />} />
+        <Route path="/problem/:id" element={<AdminRoute><SolveProblemPage /></AdminRoute>} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:id" element={<ProfilePage />} />
-        <Route path="/leaderboards" element={<LeaderboardPage />} />
+        <Route path="/assessments" element={<AssessmentsPage />} />
+        <Route path="/test/:testId" element={<TestAttemptPage />} />
+        <Route path="/admin/createTest" element={<AdminRoute><CreateTestPage /></AdminRoute>} />
+        <Route path="/admin/test/:testId/performance" element={<AdminRoute><TestPerformancePage /></AdminRoute>} />
+        <Route path="/admin/history" element={<AdminRoute><AssessmentHistoryPage /></AdminRoute>} />
 
 
         <Route
