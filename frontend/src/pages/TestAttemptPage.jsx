@@ -7,7 +7,6 @@ import {
   ShieldCheck, 
   ShieldAlert,
   Play, 
-  Save, 
   CheckCircle2, 
   XCircle, 
   AlertTriangle,
@@ -62,6 +61,7 @@ export default function TestAttemptPage() {
   const [violationBanner, setViolationBanner] = useState("");
   const attemptRef = useRef(null);
   const lastViolationTimeRef = useRef(0);
+  const lastSavedCodeRef = useRef({});
 
   // Code execution & submission states
   const [isRunning, setIsRunning] = useState(false);
@@ -197,6 +197,7 @@ export default function TestAttemptPage() {
       });
 
       setAnswers(initialAnswers);
+      lastSavedCodeRef.current = { ...initialAnswers };
       setPhase("testing");
     } catch (error) {
       setMessage(error.response?.data?.message || "Unable to start the assessment.");
@@ -379,23 +380,33 @@ export default function TestAttemptPage() {
     }
   };
 
-  // Save answer draft
-  const handleSaveDraft = async () => {
-    if (!attempt || !question) return;
-    try {
-      setSaveStatus("Saving draft...");
-      await axiosClient.patch(`/tests/attempts/${attempt._id}/answers`, {
-        question: question._id,
-        code: answers[question._id] || "",
-        language
-      });
-      setSaveStatus("Draft saved");
-      setTimeout(() => setSaveStatus(""), 2500);
-    } catch {
-      setSaveStatus("Failed to save draft");
-      setTimeout(() => setSaveStatus(""), 2500);
-    }
-  };
+  // Debounced auto-save (saves automatically 2 seconds after user stops typing)
+  useEffect(() => {
+    if (phase !== "testing" || !attempt?._id || !question?._id) return;
+
+    const currentCode = answers[question._id];
+    if (currentCode === undefined) return;
+    if (lastSavedCodeRef.current[question._id] === currentCode) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        setSaveStatus("Auto-saving...");
+        await axiosClient.patch(`/tests/attempts/${attempt._id}/answers`, {
+          question: question._id,
+          code: currentCode,
+          language
+        });
+        lastSavedCodeRef.current[question._id] = currentCode;
+        setSaveStatus("Auto-saved");
+        setTimeout(() => setSaveStatus(""), 2000);
+      } catch {
+        setSaveStatus("Auto-save failed");
+        setTimeout(() => setSaveStatus(""), 2500);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [answers, question?._id, attempt?._id, language, phase]);
 
   // Submit code for grading on hidden test cases
   const handleSubmitQuestion = async () => {
@@ -1200,13 +1211,12 @@ export default function TestAttemptPage() {
 
           {/* Action Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-[#111411] px-5 py-3.5">
-            <button
-              onClick={handleSaveDraft}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3.5 py-2 text-xs font-medium text-white/70 hover:bg-white/5 transition"
-            >
-              <Save className="h-3.5 w-3.5" />
-              <span>Save draft</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-[11px] font-mono text-white/50">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                {saveStatus || "Auto-save active"}
+              </span>
+            </div>
 
             <div className="flex items-center gap-3">
               <button
